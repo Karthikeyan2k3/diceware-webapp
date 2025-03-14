@@ -20,7 +20,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1  # Update this to match your bucket's region
+          aws-region: eu-north-1  # Update this to match your bucket's region
 
       # Step 3: List current contents in S3 bucket for debugging purposes
       - name: List files in S3 bucket
