@@ -29,5 +29,4 @@ jobs:
       # Step 4: Sync files to S3 (excluding .git folder, README.md, and .github/workflows)
       - name: Sync files to S3
         run: |
-          aws s3 sync ./ s3://diceware-viaactions --exclude ".git/*" --exclude "README.md" --exclude ".github/workflows/*"
-
+          aws s3 sync ./ s3://diceware-viaactions --exclude ".git/*" --exclude "README.md" --exclude ".github/workflows/*" --acl public-read
