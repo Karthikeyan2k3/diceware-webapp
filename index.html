@@ -69,6 +69,7 @@
             color: #797983;
             opacity: 0;
             animation: appear 0.5s both;
+            user-select: none;
         }
 
         .diceContainer {
@@ -275,14 +276,14 @@
 <body>
 <div id="app">
     <main>
-        <div v-for="(word, index) in words" :key="index + word.id"
-            @click="rerollWord(index)" class="wordContainer">
+        <div v-for="(word, index) in words" :key="index + word.id" 
+            class="wordContainer">
             <div class="word"
                  :style="`animation-delay:${(word.delay)}ms`"
             >{{ word.word }}
             </div>
             <div class="wordColor" :style="{background: word.color}"></div>
-            <div class="diceContainer">
+            <div class="diceContainer" @click="rerollWord(index)">
                 <i v-for="(dice, index) in word.dices" :key="index"
                    :class="`dice bx bx-dice-${dice.value} roll-${dice.animation}`"
                    :style="`animation-delay:${dice.delay}ms`"
@@ -307,7 +308,7 @@
 <!-- GitHub Corner -->
 <a href="https://github.com/qoomon/diceware-webapp" class="github-corner" aria-label="View source on GitHub">
     <svg width="80" height="80" viewBox="0 0 250 250"
-         style="fill:#fefefed9; color:#1b1b23; position: fixed; top: 0; border: 0; right: 0;" aria-hidden="true">
+         style="fill:#797983; color:#1b1b23; position: fixed; top: 0; border: 0; right: 0;" aria-hidden="true">
         <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path>
         <path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2"
               fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path>
@@ -376,9 +377,16 @@
     }
 
     function randomDiceValue(sides = 6) {
-        const min = 1;
-        const max = sides;
-        return Math.floor(Math.random() * (max - min + 1)) + min;
+        const randomBuffer = new Uint32Array(1);
+        const MAX_UINT32 = Math.pow(2, 32);
+        // Largest multiple of range within MAX_UINT64
+        const maxBiosFreeNumber = MAX_UINT32 - (MAX_UINT32 % sides);
+        do { 
+            crypto.getRandomValues(randomBuffer);
+        // Rejection sampling ensures fairness by discarding values that would introduce bias     
+        } while (randomBuffer[0] >= maxBiosFreeNumber);
+    
+        return (randomBuffer[0] % sides) + 1;
     }
 
     function checkRandomDice(dice, rollCount = 1_000_000, validDerivation = 0.01) {
@@ -443,7 +451,7 @@
 
             const actions = {
                 rerollWords() {
-                    words.value = words.value.map(() => rollWord());
+                    words.value.forEach((word, index) => this.rerollWord(index));
                 },
                 rerollWord(index) {
                     const currentDices = words.value[index].dices;
@@ -483,8 +491,13 @@
                 // verify dice
                 checkRandomDice(() => randomDiceValue(diceSides));
 
+                
                 // load dice word list
-                diceWordMap.value = await fetch('./assets/eff_large_wordlist.txt')
+                const defaultWordlistId = 'en';
+                const wordlistId = new URLSearchParams(location.search).get('wordlist') ?? 'en';
+                diceWordMap.value = await fetch(`./assets/wordlist_${wordlistId}.txt`)
+                    .then(response => response.status === 200 ? response 
+                        : fetch(`./assets/wordlist_${defaultWordlistId}.txt`))
                     .then(response => response.text())
                     .then(data => new Map(data.split('\n').map(line => line.split('\t'))));
 
